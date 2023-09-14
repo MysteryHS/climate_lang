@@ -1,0 +1,128 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Climate Chat</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'chatbot/css/styles.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous"></head>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+<body style="display: flex; flex-direction: column; align-items:center; height: 100vh;">
+    <div style="margin-bottom: 30px; flex: initial;" class="default-box">
+        <h5>Welcome to Climate Chat</h5>
+        <p>This app lets you learn more about climate thanks to NLP and is sourced by IPCC reports!</p>
+    </div>
+
+    <div class="default-box overflow-auto max-h-[70%]" id="chat" style="flex: auto;">
+
+    </div>
+
+    <div class="default-box prompt" style="flex: initial;">
+        <input class="form-control prompt-input"  id="promptInput" placeholder="Ask your question">
+        <button type="submit" id="submit"><i class="bi bi-arrow-return-left"></i></button>
+    </div>
+    <ul id="apiResponse"></ul>
+
+    <script>
+
+        function addChat(isUser, text, sources=[]){
+            var chat = $("#chat")
+            var divFlex = document.createElement("div")
+            divFlex.classList.add("flex", "flex-col", "p-3")
+            var div = document.createElement("div")
+            div.classList.add("default-box", "p-2")
+            if(isUser){
+                div.classList.add("user-text", "ml-auto")
+            } else {
+                div.classList.add("bot-text", "mr-auto")
+                if(sources.length != 0){
+                    p = document.createElement("p")
+                    p.textContent = "Sources: "
+                    for(source of sources){
+                        source.style.color = "blue";
+                        source.style.marginRight = "5px";
+                        p.appendChild(source)
+                    }
+                    div.appendChild(p)
+                }
+                
+            }
+            div.textContent = div.textContent + text
+            
+            divFlex.append(div)
+            chat.append(divFlex)
+        }
+
+        $(document).ready(function() {
+            pdfToUrl = {
+                "IPCC_AR6_WGIII_FullReport.pdf": "https://www.ipcc.ch/report/ar6/wg3/downloads/report/IPCC_AR6_WGIII_FullReport.pdf",
+                "IPCC_AR6_WGII_FullReport.pdf": "https://report.ipcc.ch/ar6/wg2/IPCC_AR6_WGII_FullReport.pdf",
+                "IPCC_AR6_SYR_FullVolume.pdf": "https://www.ipcc.ch/report/ar6/syr/downloads/report/IPCC_AR6_SYR_FullVolume.pdf",
+                "IPCC_AR6_WGI_FullReport.pdf": "https://report.ipcc.ch/ar6/wg1/IPCC_AR6_WGI_FullReport.pdf",
+                "IPCC_AR6_WGII_SummaryForPolicymakers.pdf": "https://www.ipcc.ch/report/ar6/wg2/downloads/report/IPCC_AR6_WGII_SummaryForPolicymakers.pdf"
+            }
+
+            $("#promptInput").keyup(function(event) {
+                if (event.keyCode === 13) {
+                    $("#submit").click();
+                }
+            });
+
+            addChat(false, "Ask me any question on climate change! I'll answer you with sources.")
+
+
+            $("#submit").click(function() {
+                var inputText = $("#promptInput").val();
+                if(inputText == ""){
+                    return
+                }
+                $("#promptInput").val("");
+                var responseElement = $("#apiResponse");
+
+                const headers = {
+                    'Content-Type': 'application/json', 
+                };
+
+                const request = new Request('/api/', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({ prompt: inputText })
+                });
+
+                addChat(true, inputText)
+
+                fetch(request)
+                    .then(response => {
+                        if (!response.ok) {
+                          throw new Error(`HTTP error! Status: ${response.status}`);
+                        }
+                        return response.json();
+                      })
+                      .then(data => {
+                        console.log(data.result)
+                        sources = data.result.source_documents
+                        console.log(sources)
+                        links = []
+                        for(index in sources){
+                            link = document.createElement("a")
+                            text = sources[index].source.split("/")
+                            link.href = pdfToUrl[text[text.length - 1]]+"#page="+sources[index].page
+                            link.innerText = (parseInt(index)+1)
+                            links.push(link)
+                        }
+                        addChat(false, data.result.result, links)
+
+                      })
+                      .catch(error => {
+                        console.error('Error:', error);
+                      });
+            });
+        });
+    </script>
+</body>
+</html>

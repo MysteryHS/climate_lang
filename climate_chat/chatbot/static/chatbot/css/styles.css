@@ -1,0 +1,42 @@
+:root {
+    --first: #F9F9FA;
+    --second: #E4E4E7;
+}
+
+body {
+    background-color: var(--first) !important;
+    overflow: hidden;
+}
+
+body > * {
+    width: 50rem;
+}
+
+.default-box {
+    background-color: white;
+    border: 1px solid var(--second);
+    border-radius: .5rem;
+    padding: 32px;
+}
+
+.prompt {
+    padding-bottom: 50px;
+    display: flex;
+    transform: translateY(24px);
+    overflow: hidden;
+}
+
+.prompt > * {
+    margin: 10px;
+}
+
+.user-text {
+    color: white;
+    background-color: rgb(74, 74, 224);
+}
+
+.bot-text {
+    color: rgb(70, 70, 70);
+    background-color: darkgray;
+}
+
